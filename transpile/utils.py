@@ -13,7 +13,6 @@ def flatten(dictionary, skips):
     #     return dictionary
 
     for skip in skips:
-        newobj.pop(skip)
         pi = dictionary.get(skip)
         if pi:
             newobj.update(pi)
@@ -159,6 +158,7 @@ class CreateElementFactory:
 def validate_field(Field, dataInput):
     res = {}
     for field in Field.__dataclass_fields__:
+        print("VALIDATING", field)
         res[field] = dataInput.get(field)
 
     return res

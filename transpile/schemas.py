@@ -2,6 +2,13 @@ from dataclasses import dataclass
 import utils
 from typing import Generic, TypeVar, Optional
 import xml.etree.ElementTree as ET
+from pydantic import (
+    BaseModel,
+    validator,
+    ValidationError,
+)
+
+from pydantic.generics import GenericModel
 
 
 @dataclass
@@ -10,19 +17,6 @@ class Desktops:
     names: list[str]
     firstdesk: int
     popUpTime: int
-
-
-@dataclass
-class Mousebind:
-    button: str
-    triggerAction: str
-    actions: list[str]
-
-
-@dataclass
-class Contexts:
-    name: str
-    mousebind: list[Mousebind]
 
 
 # +dragThreshold How many pixels you need to drag for it to be
@@ -36,34 +30,88 @@ class Contexts:
 # Set to 0 to disable this feature.
 
 
-@dataclass
-class MouseConfigs:
+class MouseConfigs(BaseModel):
     dragThreshold: str
     doubleClickTime: str
     screenEdgeWarpTime: str
 
 
-@dataclass
-class Mouse:
-    contexts: Contexts
-    configs: MouseConfigs
+def check_allow_value(val, allow):
+    s = val.strip()
+    if s not in allow:
+        print(
+            "{name} {} is not in valid {name} list {}".format(
+                val, repr(allow), name="bruh"
+            )
+        )
+        raise ValueError
+
+
+class Mousebind(BaseModel):
+    button: str
+    event: str
+    actions: list[str]
+
+    @validator("event")
+    def validate_btn(cls, val):
+        print("VAL", val)
+        validbtn = [
+            "Press",
+            "Click",
+            "DoubleClick",
+            "Release",
+            "Drag",
+        ]
+        check_allow_value(val, validbtn)
+
+        return val
+
+
+class Context(BaseModel):
+    name: str
+    mousebinds: list[Mousebind]
+
+    @validator("name")
+    def validate_ctx(cls, val):
+        valid_contexts = [
+            "Frame",
+            "Client",
+            "Desktop",
+            "Root",
+            "Titlebar",
+            # "Top, Bottom, Left, Right",
+            # "TLCorner, TRCorner, BLCorner, BRCorner",
+            "Icon",
+            "Iconify",
+            "Maximize",
+            "Close",
+            "AllDesktops",
+            "Shade",
+            "MoveResize",
+        ]
+
+        check_allow_value(val, valid_contexts)
+        return val
+
+
+class Mouse(BaseModel):
+    contexts: list[Context]
+    configs: Optional[MouseConfigs]
 
 
 T = TypeVar("T")
 
 
-@dataclass
-class Keybind(Generic[T]):
+class Keybind(GenericModel, Generic[T]):
     action: str
     key: str
     chain: Optional[T]
     chroot: bool
 
 
-@dataclass
-class Keyboard:
+class Keyboard(BaseModel):
     keybinds: list[Keybind]
-    configs: str
+    configs: Optional[dict]
     chainQuitKey: str
 
 
@@ -81,50 +129,66 @@ import translator
 # actions: list[str]
 
 mouscfg = {
-    "name": "bruh",
-    "contexts": {
-        "name": "bruh",
-        "mousebinds": [
-            {
-                "button": "D",
-                "triggerAction": "bru",
-                "actions": ["shad", "bruh"],
-            },
-            {
-                "button": "E",
-                "triggerAction": "heheh",
-                "actions": ["osa", "s"],
-            },
-        ],
-    },
-    "ps": "10",
+    "contexts": [
+        {
+            "name": "Frame",
+            "mousebinds": [
+                {
+                    "button": "Press",
+                    "event": "Press",
+                    "actions": ["shad", "bruh"],
+                },
+                {
+                    "button": "Li",
+                    "event": "DoubleClick",
+                    "actions": ["osa", "s"],
+                },
+            ],
+        },
+        {
+            "name": "Frame",
+            "mousebinds": [
+                {
+                    "button": "Press",
+                    "event": "Press",
+                    "actions": ["shad", "bruh"],
+                },
+                {
+                    "button": "Li",
+                    "event": "DoubleClick",
+                    "actions": ["osa", "s"],
+                },
+            ],
+        },
+    ],
 }
 
 
 def context_attrib_replacement(data):
     data_ctx = data["contexts"]
-    mb = data_ctx["mousebinds"]
 
     def replace(dt, old, new):
         dt[new] = dt.pop(old)
 
-    replace(data_ctx, "name", "@name")
-    # data_ctx["@name"] = data_ctx.pop("name")
+    replace(data, "contexts", "context")
+    for ctx in data_ctx:
+        mbu = ctx["mousebinds"]
+        replace(ctx, "name", "@name")
+        replace(ctx, "mousebinds", "mousebind")
 
-    for m in mb:
-        replace(m, "triggerAction", "@action")
-        replace(m, "button", "@button")
+        for m in mbu:
+            replace(m, "event", "@action")
+            replace(m, "button", "@button")
 
     return data
 
 
-def mousebind_injector(data):
+def mousebind_injector(context_data):
 
-    p = utils.flatten(data, ["contexts"])
-
+    # print("Po", p)
     # return flatten(kbind, ["chain"])
     res = []
-    for action_obj in p["mousebinds"]:
+    for action_obj in context_data["mousebind"]:
         for action in action_obj["actions"]:
             xml_output = ET.Element("action", {"name": action})
             loca = "contexts/mousebinds[@action='{}']".format(
@@ -135,9 +199,17 @@ def mousebind_injector(data):
 
             print("Pine", xml_output)
         action_obj.pop("actions")
+    print("res", res)
 
     return res
 
+
+def walker(data):
+    res = []
+    for dt in data["context"]:
+        res.append(mousebind_injector(dt))
+
+    return res[0]
     # print(ET.tostring(res[0]))
     # mbs = p["contexts"]["mousebinds"]
     # for mb in mbs:
@@ -147,64 +219,27 @@ def mousebind_injector(data):
 
 b = (
     translator.CreateSchema(Mouse, mouscfg)
-    .permuate([context_attrib_replacement])
-    .hook([mousebind_injector])
+    .inject_mutations([context_attrib_replacement])
+    .hook([walker])
     .call("Mouse")
 )
 print(ET.tostring(b))
 
+import dicto
 
-# Global actions
-# Execute
-# 1 Startup notification
-# ShowMenu
-# NextWindow
-# PreviousWindow
-# DirectionalCycleWindows
-# DirectionalTargetWindow
-# GoToDesktop
-# AddDesktop
-# RemoveDesktop
-#  ToggleShowDesktop
-#  ToggleDockAutohide
-#  Reconfigure
-#  Restart
-#  Exit
-#  SessionLogout
-#  Debug
-# ndow actions
-# Focus
-# Raise
-# Lower
-# RaiseLower
-# Unfocus
-# FocusToBottom
-# Iconify
-# Close
-# ToggleShade
-#  Shade
-#  Unshade
-#  ToggleOmnipresent
-#  ToggleMaximize
-#  Maximize
-#  Unmaximize
-#  ToggleFullscreen
-#  ToggleDecorations
-#  Decorate
-#  Undecorate
-#  SendToDesktop
-#  Move
-#  Resize
-#  MoveResizeTo
-#  MoveRelative
-#  ResizeRelative
-#  MoveToEdge
-#  GrowToEdge
-#  GrowToFill
-#  ShrinkToEdge
-#  If
-#  ForEach
-#  Stop
-#  ToggleAlwaysOnTop
-#  ToggleAlwaysOnBottom
-#  SendToLayer
+
+def a(dc):
+    return dicto.flatten(dc, ["configs"])
+
+
+res = (
+    translator.CreateSchema(
+        Keyboard,
+        dicto.kbconf["Keyboard"],
+    )
+    .inject_mutations([a])
+    .hook([dicto.convertKeybind])
+    .call("keyboard")
+)
+
+print(ET.tostring(res))

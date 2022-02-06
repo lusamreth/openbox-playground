@@ -42,7 +42,6 @@ nested = {
 
 kbconf = {
     "Keyboard": {
-        "convertible": True,
         "configs": {"Threshold": "100"},
         "keybinds": [
             {
@@ -58,7 +57,7 @@ kbconf = {
                 "chain": {"action": "bruhchane", "key": "D"},
             },
         ],
-        "chainQuitKey": ["bruh", "bh"],
+        "chainQuitKey": "haa",
     }
 }
 

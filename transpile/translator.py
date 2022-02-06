@@ -5,35 +5,15 @@ import xml.etree.ElementTree as ET
 import xmltodict
 
 
-@dataclasses.dataclass
-class CreateSchema:
-    root: str
-    pipeline: list
-    schema: dict
-    hooks: list
-    hook_data: list
-
-    def __init__(self, schema, data) -> None:
-        self.pipeline = []
-        self.data = data
-        self.schema = schema
+class Transformation:
+    def __init__(self, pipeline) -> None:
         self.hooks = []
         self.hook_data = []
+        self.pipeline = pipeline
 
-    def permuate(self, permutation):
-        self.pipeline = permutation
-        return self
-
-    # hook will convert generated_data into xml
-    # this xml will be append at the end of pipeline!
-
-    def hook(self, hooks):
-        self.hooks = hooks
-        return self
-        # self.hooks
-
-    def transform(self):
-        validated = utils.validate_field(self.schema, self.data)
+    def transform(self, schema, input_data):
+        # convert to dictionary bcuz it's much easier to work with
+        validated = schema(**input_data).dict()
 
         if self.pipeline:
             generated_data = None
@@ -52,32 +32,123 @@ class CreateSchema:
         else:
             return validated
 
-    def process_hook(self):
-        generated_data = self.transform()
+
+class HookAdapter:
+    def __init__(self, hooks) -> None:
+        self.hooks = hooks
+        self.hook_data = []
+
+    def process_hook(self, generated_data):
         if self.hooks:
             for hook in self.hooks:
                 pin = hook(generated_data)
+                print("PINCO", pin)
                 if isinstance(pin, list):
                     self.hook_data.extend(pin)
                 else:
                     self.hook_data.append(pin)
         return generated_data
 
-    def call(self, root):
-        afterhook = self.process_hook()
 
-        xmlTransformed = ET.fromstring(
-            xmltodict.unparse({root: afterhook}, pretty=False)
-        )
+class XmlTranslator:
+    def __init__(self, root, dictionary_data) -> None:
+        assert isinstance(
+            dictionary_data, dict
+        ), "XmlTranslator only accepts dictionary"
+        self.root = root
+        self.data = dictionary_data
+        self.translated = None
 
-        for dt in self.hook_data:
+    def translate(self):
+        try:
+            res = xmltodict.unparse(
+                {self.root: self.data}, pretty=False
+            )
+            assert res is not None
+            self.translated = ET.fromstring(res)
+        except Exception as e:
+            raise Exception(
+                """Unable to translate!! encountered
+                    unexpected error! \n {}""".format(
+                    e
+                )
+            )
+        return self
+
+    # mutate inner xml data
+    def inject(self, xml_data):
+        print("INJ")
+        assert (
+            self.translated is not None
+        ), "xml must be translated before injecting the xml element"
+        translated = self.translated
+        for dt in xml_data:
+            print("sa", dt)
             if isinstance(dt, dict):
-                bruh = xmlTransformed.find(dt["location"])
-                bruh.insert(0, dt["data"])
+                injecting_location = translated.findall(
+                    dt["location"]
+                )
+                if injecting_location is None:
+                    raise Exception(
+                        "Invalid Location !! \n Location:{}",
+                        dt["location"],
+                    )
+                print("INJO", injecting_location)
+                injecting_location.insert(0, dt["data"])
             else:
-                xmlTransformed.insert(1, dt)
+                translated.insert(1, dt)
 
-        return xmlTransformed
+    def result(self):
+        return self.translated
+
+
+class CreateSchema:
+    # pipeline: list = []
+    # hooks: list = []
+    # schema: dict
+    # data: dict
+
+    def __init__(self, schema, data) -> None:
+        self.pipeline = []
+        self.hooks = []
+        self.schema = schema
+        self.data = data
+
+        self.transformer_builder = lambda: Transformation(
+            self.pipeline
+        ).transform(self.schema, self.data)
+
+        self.hook_adapter_builder = lambda: HookAdapter(
+            hooks=self.hooks
+        )
+        super()
+
+    def inject_mutations(self, mutation_pipeline):
+        self.pipeline = mutation_pipeline
+        return self
+
+    # hook will convert generated_data into xml
+    # this xml will be append at the end of pipeline!
+
+    def hook(self, hooks):
+        self.hooks = hooks
+        return self
+        # self.hooks
+
+    def call(self, root):
+        transformed_data = self.transformer_builder()
+        hook_adapter = self.hook_adapter_builder()
+
+        # afterhook = Transformer.transform(self.pipeline, self.hook)
+        afterhook = hook_adapter.process_hook(transformed_data)
+        res = XmlTranslator(root, afterhook).translate()
+
+        # xmlTransformed = ET.fromstring(
+        #     xmltodict.unparse({root: afterhook}, pretty=False)
+        # )
+        res.inject(hook_adapter.hook_data)
+
+        return res.result()
 
 
 # # output : name of output file
