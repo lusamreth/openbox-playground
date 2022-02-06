@@ -1,0 +1,93 @@
+Should create a walker 
+Append First element since it does not register !!
+
+
+def new_append(branch, k, v):
+    q = detect_depth_change(depths)
+
+    detect_root = D.detect_change(root_index)
+    if detect_root:
+        if not CALLS[0]:
+            # pine_tree.append(depth_record[0])
+            pine_tree.append({depth_record[0]: 0})
+            pine_keys.append(depth_record[0])
+            CALLS[0] = True
+
+    def get_last_pine():
+        l = last_one(pine_keys)
+        proot = last_one(pine_tree)[l]
+        if proot == 0:
+            return
+        return proot
+
+    # # this scan the first element in depth
+    # if depth_record and not CALLS[1]:
+    #     p = get_last_pine()
+    #     print(
+    #         "SAdA",
+    #         pine_tree,
+    #         last_one(pine_tree)[last_one(pine_keys)],
+    #     )
+    #     CALLS[1] = True
+
+    if branch:
+        if detect_root:
+            s, e = root_index[cux[0]], last_one(root_index)
+            # super_slice = depth_record[s:e]
+            super_slice = branch
+
+            main_root = depth_record[s]
+            print("SUPER DUPER SLICE", super_slice)
+
+            super_slice.extend([k])
+            b = branch_to_xml(super_slice)
+            b["tail"].text = v
+
+            pine_tree[cux[0]][main_root] = b
+            # pine_tree[cux[0]][main_root] = create_E(super_slice, v)
+
+            cux[0] += 1
+
+            if last_one(root_index) == 0 and len(root_index) > 1:
+                pen = len(root_index) - 1
+
+            parent = depth_record[last_one(root_index)]
+            print("++++++ pa", parent, e)
+            pine_tree.append({parent: 0})
+            pine_keys.append(parent)
+
+        else:
+            print("OUTSIDE CHECK!", k, v)
+        pass
+
+
+nested = {
+    "bruh1": "11",
+    # "bruh2": {"sada": 1},
+    "hell": {
+        "id": "1",
+        "okabil": "100",
+        "okabil11": "100",
+        "okabil2": "100",
+        "pp01": {
+            "lkee-2": {"pico": {"pp": "100"}},
+            # "bruh": "100",
+            "lkee-1": {"bruh1": "100"},
+            "lkee-3": {"bruh": "100"},
+        },
+        "ppp04": {"pbg": "010", "pbx": "012"},
+        "ppp03": {"pbg": "010", "pbx": "012"},
+        "ppp0ss": {"pbg": "010", "pbx": "012"},
+        "ppp02": {"pbo": {"lkee": "100"}, "xpbo": {"lkee": "100"}},
+        "pda": "100",
+    },
+    "DOTAC": {"SD": {"dsad": "bru"}},
+    "DOTAC2": {"SDu": {"sda": "sda"}},
+    "pita2": {"pb": {"lkee": "100"}, "pita2Parent": "100"},
+    # problem after entering root it neglect the upper element
+    "pita": {
+        "certic": {"bruh1": {"sdas": "10"}},
+        "pbd": {"lkeex": "100"},
+    },
+    "bruh": "11",
+}

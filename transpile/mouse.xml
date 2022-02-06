@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<mouse>
+    <context name="Frame">
+        <mousebind button="W-Left" action="Press">
+            <action name="Focus" />
+            <action name="Raise" />
+        </mousebind>
+        <mousebind button="W-Left" action="Click">
+            <action name="Unshade" />
+        </mousebind>
+        <mousebind button="W-Left" action="Drag">
+            <action name="Move" />
+        </mousebind>
+        <mousebind button="W-Right" action="Press">
+            <action name="Focus" />
+            <action name="Raise" />
+            <action name="Unshade" />
+        </mousebind>
+        <mousebind button="W-Right" action="Drag">
+            <action name="Resize" />
+        </mousebind>
+        <mousebind button="W-Middle" action="Press">
+            <action name="Execute" />
+        </mousebind>
+        <mousebind button="W-S-Left" action="Press">
+            <action name="Execute" />
+        </mousebind>
+    </context>
+    <context name="MoveResize">
+        <mousebind button="W-Left" action="Drag">
+            <action name="Move" />
+        </mousebind>
+        <mousebind button="Up" action="Click">
+            <action name="GoToDesktop" />
+        </mousebind>
+        <mousebind button="Down" action="Click">
+            <action name="GoToDesktop" />
+        </mousebind>
+        <mousebind button="A-Up" action="Click">
+            <action name="GoToDesktop" />
+        </mousebind>
+        <mousebind button="A-Down" action="Click">
+            <action name="GoToDesktop" />
+        </mousebind>
+    </context>
+    <context name="Titlebar">
+        <mousebind button="Left" action="DoubleClick">
+            <action name="ToggleMaximizeFull" />
+        </mousebind>
+    </context>
+</mouse>

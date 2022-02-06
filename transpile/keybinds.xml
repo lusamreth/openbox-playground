@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<keyboard>
+  <keybind keybind="c-g">
+    <action name="quitstr"/>
+  </keybind>
+  <keybind keybind="W-f">
+    <action name="bruh"/>
+  </keybind>
+  <keybind keybind="W-a" chroot="true">
+    <action name="bruh"/>
+    <keybind keybind="f">
+      <action name="bruh"/>
+    </keybind>
+    <keybind keybind="w">
+      <action name="bruh"/>
+    </keybind>
+  </keybind>
+</keyboard>
