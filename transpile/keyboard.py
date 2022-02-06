@@ -18,23 +18,8 @@ class Keybind(Generic[T]):
 @dataclass
 class Keyboard:
     keybinds: list[Keybind]
-    configs: str
+    configs: Optional[dict]
     chainQuitKey: str
-
-
-def a(dc):
-    return dicto.flatten(dc, ["configs"])
-
-
-res = (
-    translator.CreateSchema(
-        Keyboard,
-        dicto.kbconf["Keyboard"],
-    )
-    .permuate([a])
-    .hook([dicto.convertKeybind])
-    .call()
-)
 
 
 # b = xmltodict.unparse({"keyboard": res}, pretty=True)
