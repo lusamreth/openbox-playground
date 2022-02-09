@@ -5,7 +5,11 @@ from os.path import exists
 from copy import deepcopy
 
 
-def flatten(dictionary, skips):
+def replace(dt, old, new):
+    dt[new] = dt.pop(old)
+
+
+def flatten(dictionary, skips, strict=False):
     newobj = deepcopy(dictionary)
     assert isinstance(dictionary, dict)
 
@@ -14,44 +18,37 @@ def flatten(dictionary, skips):
 
     for skip in skips:
         pi = dictionary.get(skip)
-        if pi:
+        if pi and not strict:
+            print("PI", pi)
             newobj.update(pi)
+            newobj.pop(skip)
+        elif strict:
+            raise ValueError(
+                "Stict enabled! dict must contain the target skip value"
+            )
 
     # newobj.pop("convertible")
 
     return newobj
 
 
-def create_action(mapper, action_obj):
-    EP = None
+def delete_none(_dict):
+    """Delete None values recursively from all of
+    the dictionaries, tuples, lists, sets"""
 
-    def adder(k, itm):
-        sube = ET.SubElement(EP, k[1:])
-        sube.set("name", itm)
+    if isinstance(_dict, dict):
+        for key, value in list(_dict.items()):
+            if isinstance(value, (list, dict, tuple, set)):
+                _dict[key] = delete_none(value)
+            elif value == {} or value is None or key is None:
+                del _dict[key]
 
-    def chain(_, itm):
-        assert EP is not None
-        poi = create_action(mapper, itm)
-        EP.insert(0, poi)
+    elif isinstance(_dict, (list, set, tuple)):
+        _dict = type(_dict)(
+            delete_none(item) for item in _dict if item is not None
+        )
 
-    SkipVar = {"@": adder, "?": chain}
-
-    for k, map in mapper.items():
-
-        itm = action_obj.get(map)
-        pine = list(filter(lambda a: a == k[0], SkipVar))
-
-        if k[0] in SkipVar and itm is not None:
-            SkipVar[k[0]](k, itm)
-
-        if k[0] != "?" and itm is None:
-            print("iasd", k, mapper)
-            raise Exception("bruh")
-        if pine:
-            continue
-
-        EP = ET.Element(k, {})
-    return EP
+    return _dict
 
 
 def xml_format(tar):
@@ -74,30 +71,6 @@ class CreateXmlAccessService(object):
         rootElement = ET.Element(self.root)
         targetFd = open(self.name, self.mode)
         return {"targetFd": targetFd, "rootElement": rootElement}
-
-
-def makeAction(action, inneraction, cmd):
-    inner = ET.SubElement(action, inneraction)
-    inner.text = cmd
-
-
-def combine_kv(keys, values):
-    def not_list(a):
-        return type(a) is not list
-
-    if not_list(keys) and not_list(values):
-        keys = [keys]
-        values = [values]
-
-    # default behavoir: leftover keys will be ignored!
-    if len(keys) < len(values):
-        raise Exception("Not enough keys to combine with value")
-
-    res = {}
-    for i, val in enumerate(values):
-        res[keys[i]] = val
-        # res[val] = keys[i]
-    return res
 
 
 class CreateDataService(object):

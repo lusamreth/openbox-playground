@@ -1,7 +1,7 @@
 from copy import deepcopy
-import dicttoxml
 from dict2xml import dict2xml
 import xml.etree.ElementTree as ET
+import dicttoxml
 import translator
 import xmltodict
 
@@ -62,24 +62,6 @@ kbconf = {
 }
 
 
-def flatten(dictionary, skips):
-    newobj = deepcopy(dictionary)
-    assert isinstance(dictionary, dict)
-
-    # if dictionary.get("convertible") is None:
-    #     return dictionary
-
-    for skip in skips:
-        newobj.pop(skip)
-        pi = dictionary.get(skip)
-        if pi:
-            newobj.update(pi)
-
-    # newobj.pop("convertible")
-
-    return newobj
-
-
 # def create_action(mapper, action_obj):
 #     kbind = {}
 #     for k, map in mapper.items():
@@ -98,56 +80,6 @@ def flatten(dictionary, skips):
 #         kbind[k] = itm
 #     # new_keybind.append({})
 #     return kbind
-
-
-def create_action(mapper, action_obj):
-    EP = None
-
-    def adder(k, itm):
-        sube = ET.SubElement(EP, k[1:])
-        sube.set("name", itm)
-
-    def chain(_, itm):
-        assert EP is not None
-        poi = create_action(mapper, itm)
-        EP.insert(0, poi)
-
-    SkipVar = {"@": adder, "?": chain}
-
-    for k, map in mapper.items():
-
-        itm = action_obj.get(map)
-        pine = list(filter(lambda a: a == k[0], SkipVar))
-
-        if k[0] in SkipVar and itm is not None:
-            SkipVar[k[0]](k, itm)
-
-        if k[0] != "?" and itm is None:
-            print("hayi diom")
-            raise Exception("bruh")
-        if pine:
-            continue
-
-        EP = ET.Element(k, {})
-    return EP
-
-
-def convertKeybind(input_dict):
-    dictionary = input_dict
-    # mapper = {"@key": "key", "action": "action", "?chain": "chain"}
-    mapper = {
-        "keybind": "key",
-        "@action": "action",
-        "?chain": "chain",
-    }
-    # return flatten(kbind, ["chain"])
-    res = []
-    for action_obj in dictionary["keybinds"]:
-        res.append(create_action(mapper, action_obj))
-
-    input_dict.pop("keybinds")
-    print("CONVIEI", input_dict)
-    return res
 
 
 # b = flatten(a, ["configs", "keybinds"])

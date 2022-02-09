@@ -2,13 +2,58 @@ from dataclasses import dataclass
 import utils
 from typing import Generic, TypeVar, Optional
 import xml.etree.ElementTree as ET
+import translator
+import var
+from pydantic.generics import GenericModel
 from pydantic import (
     BaseModel,
     validator,
-    ValidationError,
+    validate_arguments,
+    root_validator,
 )
 
-from pydantic.generics import GenericModel
+
+def value_list_validation(field, val, valid_values):
+    spot_invalid = set(val).difference(valid_values)
+    if len(spot_invalid) > 0:
+        raise ValueError(
+            "Invalid {} items at {}".format(field, spot_invalid)
+        )
+
+
+@validate_arguments
+def check_field_is_valid_obs_value(
+    field_name: list[str],
+) -> classmethod:
+    def _field_checker(_, values) -> str:
+        prone = set(values.keys()).intersection(field_name)
+        selected = {k: values[k] for k in prone}
+
+        for field, val in selected.items():
+            target = field
+            mapto = field.split(":", 1)
+            if len(mapto) > 1:
+                target = field[1]
+
+            valid_values = var.Validation.get(target.strip())
+            if valid_values:
+                if isinstance(val, list):
+                    value_list_validation(field, val, valid_values)
+                else:
+                    check_allow_value(val, valid_values)
+            else:
+                raise Exception(
+                    "Invalid field of validation!: <{}> ".format(
+                        field
+                    )
+                )
+
+        return values
+
+    # val.__name__ = (
+    #     check_field_is_valid_email.__name__ + "_" + field_name
+    # )
+    return root_validator(allow_reuse=True)(_field_checker)
 
 
 @dataclass
@@ -52,46 +97,18 @@ class Mousebind(BaseModel):
     event: str
     actions: list[str]
 
-    @validator("event")
-    def validate_btn(cls, val):
-        print("VAL", val)
-        validbtn = [
-            "Press",
-            "Click",
-            "DoubleClick",
-            "Release",
-            "Drag",
-        ]
-        check_allow_value(val, validbtn)
-
-        return val
+    _validate_valid_values = check_field_is_valid_obs_value(
+        ["event", "actions"]
+    )
 
 
 class Context(BaseModel):
     name: str
     mousebinds: list[Mousebind]
 
-    @validator("name")
-    def validate_ctx(cls, val):
-        valid_contexts = [
-            "Frame",
-            "Client",
-            "Desktop",
-            "Root",
-            "Titlebar",
-            # "Top, Bottom, Left, Right",
-            # "TLCorner, TRCorner, BLCorner, BRCorner",
-            "Icon",
-            "Iconify",
-            "Maximize",
-            "Close",
-            "AllDesktops",
-            "Shade",
-            "MoveResize",
-        ]
-
-        check_allow_value(val, valid_contexts)
-        return val
+    _validate_valid_values = check_field_is_valid_obs_value(
+        ["name:context"]
+    )
 
 
 class Mouse(BaseModel):
@@ -118,12 +135,6 @@ class Keyboard(BaseModel):
 Form = {"mouse": Mouse, "desktop": Desktops, "keyboard": Keyboard}
 
 
-def process_chain_key(root, chain):
-    passed = utils.validate_field(Keybind, chain)
-
-
-import translator
-
 # button: str
 # triggerAction: str
 # actions: list[str]
@@ -136,12 +147,12 @@ mouscfg = {
                 {
                     "button": "Press",
                     "event": "Press",
-                    "actions": ["shad", "bruh"],
+                    "actions": ["Debug", "AddDesktop"],
                 },
                 {
                     "button": "Li",
                     "event": "DoubleClick",
-                    "actions": ["osa", "s"],
+                    "actions": ["NextWindow", "AddDesktop"],
                 },
             ],
         },
@@ -151,79 +162,18 @@ mouscfg = {
                 {
                     "button": "Press",
                     "event": "Press",
-                    "actions": ["shad", "bruh"],
+                    "actions": ["NextWindow", "AddDesktop"],
                 },
                 {
                     "button": "Li",
                     "event": "DoubleClick",
-                    "actions": ["osa", "s"],
+                    "actions": ["NextWindow", "AddDesktop"],
                 },
             ],
         },
     ],
 }
 
-
-def context_attrib_replacement(data):
-    data_ctx = data["contexts"]
-
-    def replace(dt, old, new):
-        dt[new] = dt.pop(old)
-
-    replace(data, "contexts", "context")
-    for ctx in data_ctx:
-        mbu = ctx["mousebinds"]
-        replace(ctx, "name", "@name")
-        replace(ctx, "mousebinds", "mousebind")
-
-        for m in mbu:
-            replace(m, "event", "@action")
-            replace(m, "button", "@button")
-
-    return data
-
-
-def mousebind_injector(context_data):
-
-    # print("Po", p)
-    # return flatten(kbind, ["chain"])
-    res = []
-    for action_obj in context_data["mousebind"]:
-        for action in action_obj["actions"]:
-            xml_output = ET.Element("action", {"name": action})
-            loca = "contexts/mousebinds[@action='{}']".format(
-                action_obj["@action"]
-            )
-
-            res.append({"location": loca, "data": xml_output})
-
-            print("Pine", xml_output)
-        action_obj.pop("actions")
-    print("res", res)
-
-    return res
-
-
-def walker(data):
-    res = []
-    for dt in data["context"]:
-        res.append(mousebind_injector(dt))
-
-    return res[0]
-    # print(ET.tostring(res[0]))
-    # mbs = p["contexts"]["mousebinds"]
-    # for mb in mbs:
-    #     print(mb)
-    # data["contexts"]["name"]
-
-
-b = (
-    translator.CreateSchema(Mouse, mouscfg)
-    .inject_mutations([context_attrib_replacement])
-    .hook([walker])
-    .call("Mouse")
-)
-print(ET.tostring(b))
 
 import dicto
 
