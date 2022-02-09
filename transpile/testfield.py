@@ -55,23 +55,51 @@ re = replacer(
     val="ok",
 )
 
-with open("first_test.json") as f:
-    p = json.load(f)
+# with open("first_test.json") as f:
+#     p = json.load(f)
+
+#     root = TranslateSchema(
+#         domain.RootSetting, p["RootSetting"]
+#     ).call("openbox")
+
+#     archetypes = {
+#         "keyboard": domain.Keyboard,
+#         "mouse": domain.Mouse,
+#         "theme": domain.Theme,
+#         "applications": domain.Applications,
+#         "menu": domain.Menu,
+#         "desktops": domain.Desktops,
+#     }
+
+#     res = mutations.BuildResolver(archetypes, mutations.Resolver, p)
+#     for r in res.values():
+#         root.insert(0, r)
+
+#     print(ET.tostring(root))
+
+
+def building_openbox_config(dict_data):
 
     root = TranslateSchema(
         domain.RootSetting, p["RootSetting"]
     ).call("openbox")
 
-    archetypes = {
-        "keyboard": domain.Keyboard,
-        "mouse": domain.Mouse,
-        "theme": domain.Theme,
-        "applications": domain.Applications,
-        "desktops": domain.Desktops,
-    }
+    res = mutations.BuildResolver(
+        domain.archetypes, mutations.Resolver, dict_data
+    )
 
-    res = mutations.BuildResolver(archetypes, mutations.Resolver, p)
+    assert root is not None
     for r in res.values():
         root.insert(0, r)
 
+    # xmlns="http://openbox.org/3.4/rc" xmlns:xi="http://www.w3.org/2001/XInclude"
+    root.attrib = {
+        "xmlns": "http://openbox.org/3.4/rc",
+        "xmlns:xi": "http://www.w3.org/2001/XInclude",
+    }
     print(ET.tostring(root))
+
+
+with open("first_test.json") as f:
+    p = json.load(f)
+    building_openbox_config(p)

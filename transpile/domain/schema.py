@@ -320,6 +320,26 @@ class RootSetting(BaseModel):
     _no_empty = remove_empty()
 
 
+# <menu>
+#   <hideDelay>250</hideDelay>
+#   <middle>no</middle>
+#   <submenuShowDelay>100</submenuShowDelay>
+#   <submenuHideDelay>400</submenuHideDelay>
+#   <applicationIcons>yes</applicationIcons>
+#   <manageDesktops>yes</manageDesktops>
+#   <file>menu.xml</file>
+# </menu>
+
+
+class Menu(BaseModel):
+    hideDelay: int
+    middle: bool
+    submenuShowDelay: int
+    submenuHideDelay: int
+    applicationIcons: bool
+    file: "str"
+
+
 # _replace = replace_field_name({"focus": "xd"})
 
 

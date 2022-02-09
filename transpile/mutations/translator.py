@@ -79,23 +79,21 @@ class XmlTranslator:
 
     # mutate inner xml data
     def inject(self, xml_data):
-        print("INJ")
+        # print("INJECTING XML : ", self.root)
+
         assert (
             self.translated is not None
         ), "xml must be translated before injecting the xml element"
         translated = self.translated
         for dt in xml_data:
-            print("sa", dt)
+            print("EACH DATA", dt)
             if isinstance(dt, dict):
-                print(dt["location"], ET.tostring(translated))
                 injecting_location = translated.find(dt["location"])
-                print(injecting_location)
                 if injecting_location is None:
                     raise Exception(
                         "Invalid Location !! \n Location:{}",
                         dt["location"],
                     )
-                print("INJO", injecting_location)
                 injecting_location.insert(0, dt["data"])
             else:
                 translated.insert(1, dt)
@@ -154,7 +152,7 @@ class TranslateSchema:
         return self
         # self.hooks
 
-    def call(self, root):
+    def call(self, root) -> ET.Element:
         transformed_data = self.transformer_builder()
         hook_adapter = self.hook_adapter_builder()
 

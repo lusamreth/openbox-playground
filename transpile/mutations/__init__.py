@@ -20,6 +20,7 @@ Resolver = {
     },
     "theme": {},
     "desktops": {},
+    "menu": {},
 }
 
 

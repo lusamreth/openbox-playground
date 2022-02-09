@@ -54,5 +54,13 @@
     "number": 10,
     "firstdesk": 5,
     "popUpTime": 100
+  },
+  "menu": {
+    "hideDelay": 200,
+    "middle": true,
+    "submenuShowDelay": 200,
+    "submenuHideDelay": 200,
+    "applicationIcons": true,
+    "file": "str"
   }
 }
