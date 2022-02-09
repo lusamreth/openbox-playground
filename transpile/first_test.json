@@ -1,0 +1,58 @@
+{
+  "RootSetting": {
+    "resistance": {
+      "strength": 10,
+      "screen_edge_strength": 10
+    },
+    "resize": {
+      "popupShow": "Non"
+    },
+    "margins": [1, 2, 3]
+  },
+  "keyboard": {
+    "keybinds": [
+      {
+        "key": "A",
+        "action": {
+          "name": "execute",
+          "command": "echo hello"
+        },
+        "chain": {
+          "key": "x",
+          "action": "bin"
+        }
+      }
+    ],
+    "config": {},
+    "chainQuitKey": "b"
+  },
+  "mouse": {
+    "contexts": [
+      {
+        "name": "Frame",
+        "mousebinds": [
+          {
+            "button": "click",
+            "event": "Press",
+            "actions": ["Focus", "Raise"]
+          }
+        ]
+      }
+    ]
+  },
+  "theme": {
+    "name": "Sus theme",
+    "fonts": [
+      {
+        "name": "San serif",
+        "size": 15
+      }
+    ],
+    "titleLayout": "bruh"
+  },
+  "desktops": {
+    "number": 10,
+    "firstdesk": 5,
+    "popUpTime": 100
+  }
+}

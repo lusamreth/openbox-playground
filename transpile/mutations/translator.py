@@ -1,6 +1,11 @@
 from logging import error
-import utils
-import dataclasses
+
+import sys
+
+sys.path.append("../utils")
+
+from utils.mutation_tools import delete_none
+
 import xml.etree.ElementTree as ET
 import xmltodict
 
@@ -13,7 +18,9 @@ class Transformation:
 
     def transform(self, schema, input_data):
         # convert to dictionary bcuz it's much easier to work with
+
         validated = schema(**input_data).dict()
+        print("VALID", validated)
 
         if self.pipeline:
             generated_data = None
@@ -67,12 +74,7 @@ class XmlTranslator:
             assert res is not None
             self.translated = ET.fromstring(res)
         except Exception as e:
-            raise Exception(
-                """Unable to translate!! encountered
-                    unexpected error! \n {}""".format(
-                    e
-                )
-            )
+            raise TranslateError(e, self.data, self.root)
         return self
 
     # mutate inner xml data
@@ -85,9 +87,9 @@ class XmlTranslator:
         for dt in xml_data:
             print("sa", dt)
             if isinstance(dt, dict):
-                injecting_location = translated.findall(
-                    dt["location"]
-                )
+                print(dt["location"], ET.tostring(translated))
+                injecting_location = translated.find(dt["location"])
+                print(injecting_location)
                 if injecting_location is None:
                     raise Exception(
                         "Invalid Location !! \n Location:{}",
@@ -102,7 +104,24 @@ class XmlTranslator:
         return self.translated
 
 
-class CreateSchema:
+class TranslateError(Exception):
+    def __init__(self, e, data=None, root=None) -> None:
+        self.data = data
+        self.root = root
+        self.error = e
+
+    def __str__(self) -> str:
+        print(
+            "\nDATA INPUT :{} \nRoot Input: {} \n".format(
+                self.data,
+                self.root,
+            )
+        )
+        msg = "Unable to translate!! encountered unexpected error! "
+        return "{}\nXML ERROR : {}".format(msg, self.error)
+
+
+class TranslateSchema:
     # pipeline: list = []
     # hooks: list = []
     # schema: dict
