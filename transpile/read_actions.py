@@ -1,4 +1,4 @@
-with open("Note.txt") as f:
+with open("Actions.txt") as f:
     print(f)
     lines = f.readlines()
     trim_list = list(map(lambda line: line.strip(), lines))
