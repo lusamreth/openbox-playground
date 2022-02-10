@@ -12,7 +12,8 @@ Resolver = {
         # "hook": [],
     },
     "mouse": {
-        "Mutations": [context_attrib_replacement],
+        # "Mutations": [context_attrib_replacement],
+        "Mutations": [],
         "hook": [walker],
     },
     "applications": {

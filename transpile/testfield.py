@@ -55,28 +55,6 @@ re = replacer(
     val="ok",
 )
 
-# with open("first_test.json") as f:
-#     p = json.load(f)
-
-#     root = TranslateSchema(
-#         domain.RootSetting, p["RootSetting"]
-#     ).call("openbox")
-
-#     archetypes = {
-#         "keyboard": domain.Keyboard,
-#         "mouse": domain.Mouse,
-#         "theme": domain.Theme,
-#         "applications": domain.Applications,
-#         "menu": domain.Menu,
-#         "desktops": domain.Desktops,
-#     }
-
-#     res = mutations.BuildResolver(archetypes, mutations.Resolver, p)
-#     for r in res.values():
-#         root.insert(0, r)
-
-#     print(ET.tostring(root))
-
 
 def building_openbox_config(dict_data):
 
@@ -97,9 +75,24 @@ def building_openbox_config(dict_data):
         "xmlns": "http://openbox.org/3.4/rc",
         "xmlns:xi": "http://www.w3.org/2001/XInclude",
     }
+
     print(ET.tostring(root))
+
+
+def convert_bool_to_yes(_dict):
+    for k, data in _dict.items():
+        if isinstance(data, dict):
+            convert_bool_to_yes(data)
+        else:
+            if data is True:
+                _dict[k] = "yes"
+    return _dict
 
 
 with open("first_test.json") as f:
     p = json.load(f)
+    mid = p["menu"]["middle"]
+
     building_openbox_config(p)
+
+    # display deictionary

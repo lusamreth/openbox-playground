@@ -3,7 +3,7 @@ from typing import Generic, List, TypeVar, Optional, List, Annotated
 from pydantic.class_validators import root_validator
 
 from pydantic.generics import GenericModel
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, parse_obj_as
 from pydantic.types import OptionalInt
 
 
@@ -14,6 +14,36 @@ from .validators import (
     remove_empty,
     replace_field_name,
 )
+
+
+class Action(BaseModel):
+    name: str
+    misc: Optional[dict]
+
+    # @root_validator()
+    #     def flat(cls, values):
+    #         if values["misc"] is not None:
+    #             print(values["misc"])
+    #             misc = values["misc"]
+    #             for k, m in misc.items():
+    #                 values[k] = m
+
+    #             del values["misc"]
+    #             print(values)
+
+    _check_allow = check_field_is_valid_obs_value(["name:actions"])
+    _no_empty = remove_empty()
+    _attr = convert_field_to_attr(["name"])
+
+
+def make_action(value):
+    if isinstance(value, str):
+        return Action(name=value, misc=None)
+    elif isinstance(value, dict):
+        name = value["name"]
+        del value["name"]
+        return Action(name=name, misc=value)
+    return value
 
 
 class Desktops(BaseModel):
@@ -70,13 +100,20 @@ def check_allow_value(val, allow):
         raise ValueError
 
 
+Z = Action
+
+
 class Mousebind(BaseModel):
     button: str
     event: str
-    actions: list[str]
+    actions: list[Action]
 
-    _validate_valid_values = check_field_is_valid_obs_value(
-        ["event", "actions"]
+    @validator("actions", pre=True, each_item=True)
+    def scan_action(each_action):
+        return make_action(each_action)
+
+    _replacement = replace_field_name(
+        {"event": "@action", "button": "@button"}
     )
 
 
@@ -84,6 +121,9 @@ class Context(BaseModel):
     name: str
     mousebinds: list[Mousebind]
 
+    _replacement = replace_field_name(
+        {"mousebinds": "mousebind", "name": "@name"}
+    )
     _validate_valid_values = check_field_is_valid_obs_value(
         ["name:context"]
     )
@@ -92,19 +132,12 @@ class Context(BaseModel):
 class Mouse(BaseModel):
     contexts: list[Context]
     configs: Optional[MouseConfigs]
+
     _no_empty = remove_empty()
+    _replacement = replace_field_name({"contexts": "context"})
 
 
 T = TypeVar("T")
-
-
-class Action(BaseModel):
-    name: str
-    misc: Optional[dict]
-
-    _check_allow = check_field_is_valid_obs_value(["name:actions"])
-    _no_empty = remove_empty()
-    _attr = convert_field_to_attr(["name"])
 
 
 class Keybind(GenericModel, Generic[T]):
@@ -113,16 +146,9 @@ class Keybind(GenericModel, Generic[T]):
     chain: Optional[T]
     chroot: Optional[bool]
 
-    @validator("action", pre=True, always=True)
-    def make_action(value):
-        if isinstance(value, str):
-            return Action(name=value, misc=None)
-        elif isinstance(value, dict):
-            name = value["name"]
-            del value["name"]
-            return Action(name=name, misc=value)
-        return value
-
+    _action_parser = validator(
+        "action", pre=True, always=True, allow_reuse=True
+    )(make_action)
     _attr = convert_field_to_attr(["key"])
     _no_empty = remove_empty()
 

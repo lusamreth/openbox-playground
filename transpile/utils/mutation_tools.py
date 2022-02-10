@@ -97,6 +97,49 @@ def test_combine_kv():
     assert res == expected, "Incorrect!!"
 
 
+def convert_each_action(inner):
+    if isinstance(inner, dict):
+
+        if inner.get("name") is not None:
+            n = "name"
+        else:
+            n = "@name"
+
+        name = {"@name": inner.pop(n)}
+        inner = inner | name
+        cop = {"action": inner}
+
+        return cop
+
+    return {"action": {"@name": inner}}
+
+
+def action_list_converter(action_list):
+    res = []
+    for action in action_list:
+        act = action.get("action")
+        assert act is not None
+        res.append(act)
+    return {"action": res}
+
+
+def flatten_misc(action_obj):
+    action_obj = flatten(action_obj, ["misc"])
+
+    for k, item in action_obj.items():
+
+        if k != "@name":
+            if isinstance(item, list):
+
+                mama = list(map(convert_each_action, list(item)))
+
+                print("FLAT INNER", mama)
+                action_obj[k] = action_list_converter(mama)
+                # action_obj[k] = list(mama)
+
+    return action_obj
+
+
 # come up with a way to skip element and add attribute
 # to each individual tag!!
 # +Input: {

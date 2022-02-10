@@ -15,6 +15,25 @@
         "key": "A",
         "action": {
           "name": "execute",
+          "finalactions": [
+            "bruh",
+            "haha",
+            {
+              "name": "hahahah",
+              "x": 2,
+              "y": 3
+            }
+          ]
+        },
+        "chain": {
+          "key": "x",
+          "action": "bin"
+        }
+      },
+      {
+        "key": "C",
+        "action": {
+          "name": "execute",
           "command": "echo hello"
         },
         "chain": {
@@ -32,9 +51,25 @@
         "name": "Frame",
         "mousebinds": [
           {
-            "button": "click",
+            "button": "Right",
             "event": "Press",
-            "actions": ["Focus", "Raise"]
+            "actions": [
+              {
+                "name": "execute",
+                "command": "echo cc"
+              },
+              {
+                "name": "NextWindow",
+                "finalactions": [
+                  "bruh",
+                  {
+                    "name": "haha",
+                    "x": 2,
+                    "y": 2
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -48,6 +83,7 @@
         "size": 15
       }
     ],
+    "keepBorder": false,
     "titleLayout": "bruh"
   },
   "desktops": {

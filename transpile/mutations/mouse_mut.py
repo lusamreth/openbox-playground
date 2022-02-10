@@ -1,5 +1,13 @@
+from copy import deepcopy
 import xml.etree.ElementTree as ET
 from . import translator
+
+import sys
+
+import xmltodict
+
+sys.path.append("../utils")
+from utils.mutation_tools import flatten, flatten_misc
 
 
 def context_attrib_replacement(data):
@@ -23,21 +31,34 @@ def context_attrib_replacement(data):
 
 def mousebind_injector(context_data):
 
-    # print("Po", p)
-    # return flatten(kbind, ["chain"])
     res = []
+    ctx_name = context_data["@name"]
+
     for action_obj in context_data["mousebind"]:
+        event = action_obj["@action"]
         for action in action_obj["actions"]:
-            xml_output = ET.Element("action", {"name": action})
-            loca = "context/mousebind[@action='{}']".format(
-                action_obj["@action"]
+            # create_action({"name","action"},action)
+            # name = action.get("@name")
+
+            # xml_output = ET.Element("action", {"name": name})
+            flat = flatten_misc(action)
+            # prone = xmltodict.unparse(flat)
+            action_branch = xmltodict.unparse({"action": flat})
+            assert action_branch is not None
+            xml_output = ET.fromstring(action_branch)
+            # xml_output.insert(0, ET.fromstring(action_branch))
+            print("FLAT", ET.tostring(xml_output))
+
+            loca = (
+                "context[@name='{}']/mousebind[@action='{}']".format(
+                    ctx_name, event
+                )
             )
 
             res.append({"location": loca, "data": xml_output})
 
             print("Pine", xml_output)
         action_obj.pop("actions")
-    print("res", res)
 
     return res
 
@@ -45,6 +66,7 @@ def mousebind_injector(context_data):
 def walker(data):
     res = []
     for dt in data["context"]:
+        # mutator(deepcopy(dt))
         res.append(mousebind_injector(dt))
 
     return res[0]

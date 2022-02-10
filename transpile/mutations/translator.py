@@ -10,18 +10,28 @@ import xml.etree.ElementTree as ET
 import xmltodict
 
 
+def convert_bool_to_yes(_dict):
+    for k, data in _dict.items():
+        if isinstance(data, dict):
+            convert_bool_to_yes(data)
+        else:
+            if data is True:
+                _dict[k] = "yes"
+    return _dict
+
+
 class Transformation:
     def __init__(self, pipeline) -> None:
         self.hooks = []
         self.hook_data = []
         self.pipeline = pipeline
+        self.pipeline.append(convert_bool_to_yes)
 
     def transform(self, schema, input_data):
         # convert to dictionary bcuz it's much easier to work with
 
+        print(input_data)
         validated = schema(**input_data).dict()
-        print("VALID", validated)
-
         if self.pipeline:
             generated_data = None
             for permutation in self.pipeline:
@@ -85,6 +95,7 @@ class XmlTranslator:
             self.translated is not None
         ), "xml must be translated before injecting the xml element"
         translated = self.translated
+        print("TRAN", ET.tostring(translated))
         for dt in xml_data:
             print("EACH DATA", dt)
             if isinstance(dt, dict):
